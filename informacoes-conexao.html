@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informações da Conexão</title>
+  <!-- Inclusão do CSS do Leaflet para o mapa interativo -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      line-height: 1.6;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #333;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .info-section, .map-section {
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background-color: #e7f3fe;
+      color: #2e6da4;
+      padding: 15px;
+      border-left: 4px solid #2e6da4;
+      margin-bottom: 15px;
+      text-align: left;
+      border-radius: 5px;
+    }
+    .info-box p {
+      margin: 5px 0;
+      font-size: 1.1em;
+    }
+    .button-group {
+      margin: 30px 0;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .button-group a {
+      background-color: #007bff;
+      color: #fff;
+      padding: 12px 20px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+      font-size: 1.1em;
+    }
+    .button-group a:hover {
+      background-color: #0056b3;
+    }
+    footer {
+      margin-top: 20px;
+      color: #888;
+      font-size: 0.9em;
+    }
+    /* Estilo simples para o indicador de carregamento */
+    .loading {
+      font-style: italic;
+      color: #555;
+    }
+    /* Estilo para o mapa */
+    #map {
+      height: 300px;
+      border-radius: 8px;
+      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Informações sobre a Conexão</h1>
+  
+  <div class="info-section">
+    <div class="info-box">
+      <p><strong>ASN:</strong> <span id="asn" class="loading">Buscando...</span></p>
+      <p><strong>Seu IP:</strong> <span id="ip" class="loading">Buscando...</span></p>
+      <p><strong>Seu IPv6:</strong> <span id="ipv6" class="loading">Buscando...</span></p>
+      <p><strong>IP Reverso:</strong> <span id="reverse-ip" class="loading">Buscando...</span></p>
+      <p><strong>Localização:</strong> <span id="location" class="loading">Buscando...</span></p>
+      <p><strong>Provedor de Internet (ISP):</strong> <span id="isp" class="loading">Buscando...</span></p>
+      <p><strong>Data e Hora Local:</strong> <span id="local-time"></span></p>
+    </div>
+  </div>
+
+  <!-- Seção com links dinâmicos com segurança extra -->
+  <div class="button-group">
+    <a id="bgp-link" href="#" target="_blank" rel="noopener noreferrer">bgp.he</a>
+    <a id="irr-link" href="#" target="_blank" rel="noopener noreferrer">IRR Explorer</a>
+    <a id="radb-link" href="#" target="_blank" rel="noopener noreferrer">radb</a>
+    <a id="qrator-link" href="#" target="_blank" rel="noopener noreferrer">qrator</a>
+  </div>
+  
+  <!-- Seção do mapa interativo -->
+  <div class="map-section">
+    <h2>Localização aproximada no Mapa</h2>
+    <div id="map">Carregando mapa...</div>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2025 - Criado por Paulo Rocha + GPT.</p>
+</footer>
+
+<!-- Inclusão do script do Leaflet -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  // Função para inicializar o mapa com coordenadas fornecidas
+  function initMap(lat, lon) {
+    // Cria o mapa centralizado nas coordenadas recebidas
+    var map = L.map('map').setView([lat, lon], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+    // Adiciona um marcador na posição do usuário
+    L.marker([lat, lon]).addTo(map)
+      .bindPopup('Você está aqui!')
+      .openPopup();
+  }
+
+  // Atualizar Data e Hora Local
+  const localTime = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  document.getElementById('local-time').textContent = localTime;
+
+  // Obter IP público e demais informações
+  fetch('https://api.ipify.org?format=json')
+    .then(response => response.json())
+    .then(data => {
+      const ip = data.ip;
+      document.getElementById('ip').textContent = ip;
+
+      // Consulta DNS reversa
+      fetch(`https://api.hackertarget.com/reversedns/?q=${ip}`)
+        .then(response => response.text())
+        .then(reverse => {
+          document.getElementById('reverse-ip').textContent = reverse.trim() ? reverse : 'Não disponível';
+        })
+        .catch(() => {
+          document.getElementById('reverse-ip').textContent = 'Erro na consulta';
+        });
+
+      // Obter localização, ISP, ASN e coordenadas
+      fetch(`https://ipapi.co/${ip}/json/`)
+        .then(response => response.json())
+        .then(info => {
+          if (info.error) {
+            document.getElementById('location').textContent = 'Localização não disponível';
+            document.getElementById('isp').textContent = 'Provedor não disponível';
+            document.getElementById('asn').textContent = 'N/A';
+            return;
+          }
+          document.getElementById('location').textContent = `${info.city}, ${info.region}, ${info.country_name}`;
+          document.getElementById('isp').textContent = info.org || 'Provedor não disponível';
+          
+          // Atualizar ASN
+          const asn = info.asn ? info.asn.split(' ')[0] : 'N/A';
+          document.getElementById('asn').textContent = asn;
+          
+          // Atualizar links dinâmicos com ASN
+            document.getElementById('bgp-link').href = `https://bgp.he.net/${asn}`;
+            document.getElementById('irr-link').href = `https://irrexplorer.nlnog.net/asn/${asn}`;
+            document.getElementById('radb-link').href = `https://www.radb.net/query?advanced_query=&keywords=${asn}`;
+            document.getElementById('qrator-link').href = `https://radar.qrator.net/${asn}`;
+          
+          // Inicializa o mapa se as coordenadas estiverem disponíveis
+          if(info.latitude && info.longitude) {
+            initMap(info.latitude, info.longitude);
+          } else {
+            document.getElementById('map').textContent = 'Mapa não disponível';
+          }
+        })
+        .catch(() => {
+          document.getElementById('location').textContent = 'Erro ao obter localização';
+          document.getElementById('isp').textContent = 'Erro ao obter provedor';
+          document.getElementById('asn').textContent = 'Erro';
+          document.getElementById('map').textContent = 'Mapa não disponível';
+        });
+    })
+    .catch(() => {
+      document.getElementById('ip').textContent = 'Erro ao obter IP';
+      document.getElementById('reverse-ip').textContent = 'Erro na consulta';
+      document.getElementById('location').textContent = 'Erro ao obter localização';
+      document.getElementById('isp').textContent = 'Erro ao obter provedor';
+      document.getElementById('asn').textContent = 'Erro';
+      document.getElementById('map').textContent = 'Mapa não disponível';
+    });
+
+  // Obter IPv6 público
+  fetch('https://api64.ipify.org?format=json')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('ipv6').textContent = data.ip;
+    })
+    .catch(() => {
+      document.getElementById('ipv6').textContent = 'Erro ao obter IPv6';
+    });
+</script>
+
+</body>
+</html>
