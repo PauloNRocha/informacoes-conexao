@@ -123,10 +123,10 @@
   <p>&copy; 2025 - Criado por Paulo Rocha + GPT.</p>
 </footer>
 
-<!-- Inclusão do script do Leaflet -->
+<!-- Script do Leaflet -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  // Função para inicializar o mapa com coordenadas fornecidas
+  // Inicializa o mapa com coordenadas fornecidas
   function initMap(lat, lon) {
     // Cria o mapa centralizado nas coordenadas recebidas
     var map = L.map('map').setView([lat, lon], 13);
@@ -140,9 +140,14 @@
       .openPopup();
   }
 
-  // Atualizar Data e Hora Local
+  // Atualiza horário local a cada segundo
+function atualizarHorario() {
   const localTime = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
   document.getElementById('local-time').textContent = localTime;
+}
+setInterval(atualizarHorario, 1000);
+atualizarHorario();
+
 
   // Obter IP público e demais informações
   fetch('https://api.ipify.org?format=json')
